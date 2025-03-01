@@ -12,6 +12,7 @@ export class SignUpDto {
 
   @ApiProperty({ example: 'password123', minLength: 6 })
   @IsNotEmpty()
-  @MinLength(6)
+  @MinLength(8)
+  // @Matches(regex), { message: "Password too weak" })
   password: string;
 }

@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaClient, Role } from '@prisma/client';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UserService {
@@ -9,8 +9,13 @@ export class UserService {
     username: string,
     email: string,
     password: string,
-    role: Role = Role.USER,
+    role: UserRole = UserRole.USER,
   ) {
+    const existingUser = await this.findOneByEmail(email);
+    if (existingUser) {
+      throw new BadRequestException('Email already exists');
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     return this.prisma.user.create({
       data: {

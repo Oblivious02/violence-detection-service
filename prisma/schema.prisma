@@ -7,15 +7,74 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum DetectionStatus {
+  VIOLENCE_DETECTED
+  NON_VIOLENCE
+  INCONCLUSIVE
+}
+
 model User {
-  id       Int    @id @default(autoincrement())
+  id       String             @id @default(uuid())
   username String @unique
   email    String @unique
   password String
-  role     Role   @default(USER)
+  role     UserRole   @default(USER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  uploads   Upload[]
 }
 
-enum Role {
-  USER
-  ADMIN
+model Upload {
+  id               String             @id @default(uuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id])
+  filePath         String
+  fileType         FileType
+  processingStatus ProcessingStatus   @default(PENDING)
+  detectionStatus  DetectionStatus?
+  overallConfidence Float?            // Overall confidence score for detection
+  duration         Float?             // For videos (in seconds)
+  dimensions       String?            // Format: "widthxheight" (e.g., "1920x1080")
+  fileSize         Int                // In bytes
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  originalFilePath String?  // Path to original file
+  annotatedFilePath String? // Path to processed file
+  mimeType        String?
+  detectionResults DetectionResult[]
+
+  @@index([userId])
+  @@index([processingStatus])
+  @@index([detectionStatus])
+}
+
+model DetectionResult {
+  id          String   @id @default(uuid())
+  uploadId    String
+  upload      Upload   @relation(fields: [uploadId], references: [id])
+  timestamp   Float?   // For videos (seconds into media)
+  confidence  Float
+  label       String?  // Specific detection label (e.g., "blood", "weapon")
+  severity    Float?   // Severity score (0-1)
+  createdAt   DateTime @default(now())
+
+  @@index([uploadId])
 }
